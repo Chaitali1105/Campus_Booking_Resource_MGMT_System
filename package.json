@@ -1,8 +1,9 @@
 {
   "name": "bookmycampus",
   "version": "1.0.0",
+  "private": true,
   "scripts": {
-    "build": "cd frontend-react && npm install && npm run build",
+    "vercel-build": "npm --prefix frontend-react install && npm --prefix frontend-react run build",
     "start": "node backend/server.js"
   },
   "dependencies": {
@@ -10,8 +11,8 @@
     "cors": "^2.8.5",
     "dotenv": "^16.3.1",
     "express": "^4.18.2",
+    "jsonwebtoken": "^9.0.2",
     "pg": "^8.11.3",
-    "qrcode": "^1.5.4",
-    "crypto-js": "^4.2.0"
+    "qrcode": "^1.5.4"
   }
 }

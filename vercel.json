@@ -17,12 +17,11 @@
       "dest": "backend/server.js"
     },
     {
-      "src": "/health",
-      "dest": "backend/server.js"
+      "handle": "filesystem"
     },
     {
       "src": "/(.*)",
-      "dest": "frontend-react/$1"
+      "dest": "/index.html"
     }
   ]
 }

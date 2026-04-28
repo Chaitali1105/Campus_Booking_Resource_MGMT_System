@@ -174,12 +174,12 @@ router.post('/google-login', async (req, res) => {
             const userRole = role || 'student'; // default to student
             
             const [result] = await db.query(
-                'INSERT INTO users (name, email, password_hash, role) VALUES (?, ?, ?, ?)',
+                'INSERT INTO users (name, email, password_hash, role) VALUES (?, ?, ?, ?) RETURNING id',
                 [name, email, dummyPassword, userRole]
             );
             
             user = {
-                id: result.insertId,
+                id: result[0].id,
                 name,
                 email,
                 role: userRole

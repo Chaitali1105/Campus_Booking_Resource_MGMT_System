@@ -137,7 +137,7 @@ router.post('/bookings', async (req, res) => {
             `INSERT INTO bookings 
              (user_id, user_name, user_role, resource_id, resource_name, resource_type, 
               start_time, end_time, booking_date, purpose, location, status) 
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id`,
             [user_id, user_name, user_role, resource_id, resource.name, resource.type,
              start_time, end_time, booking_date, purpose, location, 'pending']
         );
@@ -166,7 +166,7 @@ router.post('/bookings', async (req, res) => {
         res.status(201).json({
             success: true,
             message: 'Booking request submitted successfully',
-            booking_id: result.insertId
+            booking_id: result[0].id
         });
 
     } catch (error) {
@@ -197,11 +197,11 @@ router.get('/bookings', async (req, res) => {
 
         if (user_role === 'admin') {
             // Admin sees all bookings
-            query = "SELECT *, DATE_FORMAT(booking_date, '%Y-%m-%d') as booking_date FROM bookings ORDER BY created_at DESC";
+            query = "SELECT *, TO_CHAR(booking_date, 'YYYY-MM-DD') as booking_date FROM bookings ORDER BY created_at DESC";
             params = [];
         } else {
             // Users see only their bookings
-            query = "SELECT *, DATE_FORMAT(booking_date, '%Y-%m-%d') as booking_date FROM bookings WHERE user_id = ? ORDER BY created_at DESC";
+            query = "SELECT *, TO_CHAR(booking_date, 'YYYY-MM-DD') as booking_date FROM bookings WHERE user_id = ? ORDER BY created_at DESC";
             params = [user_id];
         }
 
@@ -648,7 +648,7 @@ router.delete('/resources/:id', async (req, res) => {
             [id]
         );
 
-        if (bookings[0].count > 0) {
+        if (parseInt(bookings[0].count) > 0) {
             return res.status(409).json({
                 success: false,
                 message: 'Cannot delete resource with existing bookings. Please delete all bookings first.'
@@ -674,7 +674,7 @@ router.get('/bookings/all-booked', async (req, res) => {
     try {
         const [bookings] = await db.query(
             `SELECT b.id, b.resource_name, b.resource_type,
-                    DATE_FORMAT(b.booking_date, '%Y-%m-%d') as booking_date,
+                    TO_CHAR(b.booking_date, 'YYYY-MM-DD') as booking_date,
                     b.start_time, b.end_time, b.location, b.purpose,
                     b.user_name, b.user_role, b.status
              FROM bookings b
@@ -693,7 +693,7 @@ router.get('/bookings/calendar', async (req, res) => {
     try {
         const [bookings] = await db.query(
             `SELECT b.id, b.resource_name, b.resource_type, 
-                    DATE_FORMAT(b.booking_date, '%Y-%m-%d') as booking_date,
+                    TO_CHAR(b.booking_date, 'YYYY-MM-DD') as booking_date,
                     b.start_time, b.end_time, b.location, b.purpose,
                     b.user_name, b.user_role
              FROM bookings b

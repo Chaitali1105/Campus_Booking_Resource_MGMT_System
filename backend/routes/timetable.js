@@ -14,21 +14,25 @@ router.get('/timetable', async (req, res) => {
             WHERE 1=1
         `;
         const params = [];
+        let idx = 1;
 
         if (classroom) {
-            query += ' AND t.resource_id = ?';
+            query += ` AND t.resource_id = $${idx++}`;
             params.push(classroom);
         }
         if (department) {
-            query += ' AND t.department = ?';
+            query += ` AND t.department = $${idx++}`;
             params.push(department);
         }
         if (semester) {
-            query += ' AND t.semester = ?';
+            query += ` AND t.semester = $${idx++}`;
             params.push(semester);
         }
 
-        query += ' ORDER BY FIELD(t.day, "Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"), t.start_time';
+        query += ` ORDER BY CASE t.day
+            WHEN 'Monday' THEN 1 WHEN 'Tuesday' THEN 2 WHEN 'Wednesday' THEN 3
+            WHEN 'Thursday' THEN 4 WHEN 'Friday' THEN 5 WHEN 'Saturday' THEN 6
+            ELSE 7 END, t.start_time`;
 
         const [rows] = await pool.query(query, params);
 
@@ -85,14 +89,14 @@ router.get('/timetable/check-conflict', async (req, res) => {
             `SELECT t.*, r.name as room_name
              FROM timetable t
              JOIN resources r ON t.resource_id = r.id
-             WHERE t.resource_id = ?
-             AND t.day = ?
+             WHERE t.resource_id = $1
+             AND t.day = $2
              AND (
-                 (t.start_time <= ? AND t.end_time > ?) OR
-                 (t.start_time < ? AND t.end_time >= ?) OR
-                 (t.start_time >= ? AND t.end_time <= ?)
+                 (t.start_time <= $3 AND t.end_time > $3) OR
+                 (t.start_time < $4 AND t.end_time >= $4) OR
+                 (t.start_time >= $3 AND t.end_time <= $4)
              )`,
-            [resource_id, dayName, start_time, start_time, end_time, end_time, start_time, end_time]
+            [resource_id, dayName, start_time, end_time]
         );
 
         res.json({

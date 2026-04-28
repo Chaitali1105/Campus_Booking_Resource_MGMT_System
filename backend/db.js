@@ -1,29 +1,47 @@
-const mysql = require('mysql2');
+const { Pool } = require('pg');
 require('dotenv').config();
 
-// Create MySQL connection pool
-const pool = mysql.createPool({
-    host: process.env.DB_HOST || 'localhost',
-    port: process.env.DB_PORT || 3306,
-    user: process.env.DB_USER || 'root',
-    password: process.env.DB_PASSWORD || 'root',
-    database: process.env.DB_NAME || 'bookmycampus',
-    socketPath: process.env.DB_SOCKET_PATH || undefined, // For Google Cloud SQL
-    waitForConnections: true,
-    connectionLimit: 10,
-    queueLimit: 0,
-    enableKeepAlive: true,
-    keepAliveInitialDelay: 0
+const pool = new Pool({
+    host: process.env.DB_HOST,
+    port: parseInt(process.env.DB_PORT) || 5432,
+    user: process.env.DB_USER,
+    password: process.env.DB_PASSWORD,
+    database: process.env.DB_NAME,
+    ssl: { rejectUnauthorized: false }
 });
 
-// Test connection
-pool.getConnection((err, connection) => {
-    if (err) {
-        console.error('❌ Error connecting to database:', err.message);
-        return;
+// Convert MySQL ? placeholders to PostgreSQL $1, $2, $3...
+function convertPlaceholders(sql) {
+    let i = 0;
+    return sql.replace(/\?/g, () => `$${++i}`);
+}
+
+const db = {
+    query: async (sql, params = []) => {
+        const pgSql = convertPlaceholders(sql);
+        const result = await pool.query(pgSql, params);
+        return [result.rows, result.fields];
+    },
+    getConnection: async () => {
+        const client = await pool.connect();
+        return {
+            query: async (sql, params = []) => {
+                const pgSql = convertPlaceholders(sql);
+                const result = await client.query(pgSql, params);
+                return [result.rows, result.fields];
+            },
+            beginTransaction: async () => client.query('BEGIN'),
+            commit: async () => client.query('COMMIT'),
+            rollback: async () => client.query('ROLLBACK'),
+            release: () => client.release()
+        };
     }
-    console.log('✅ Connected to MySQL database');
-    connection.release();
+};
+
+pool.connect((err, client, release) => {
+    if (err) { console.error('❌ DB connection error:', err.message); return; }
+    console.log('✅ Connected to PostgreSQL (Supabase)');
+    release();
 });
 
-module.exports = pool.promise();
+module.exports = db;

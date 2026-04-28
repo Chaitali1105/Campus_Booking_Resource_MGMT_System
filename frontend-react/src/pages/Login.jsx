@@ -32,10 +32,15 @@ export default function Login() {
           toast.error('Failed to sync with server');
         }
       } catch (err) {
-        toast.error('Failed to authenticate with server');
+        console.error('Google Auth Error:', err);
+        const errorMsg = err.response?.data?.message || err.message || 'Failed to authenticate with server';
+        toast.error(`Error: ${errorMsg}`);
       }
     },
-    onError: () => toast.error('Google Sign-In failed'),
+    onError: (err) => {
+      console.error('Google Sign-In failed:', err);
+      toast.error('Google Sign-In failed');
+    },
   });
 
   const handleChange = (e) => setForm(f => ({ ...f, [e.target.name]: e.target.value }));

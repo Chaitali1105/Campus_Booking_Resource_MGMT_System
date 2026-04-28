@@ -156,7 +156,7 @@ router.post('/login', async (req, res) => {
 });
 
 // Google Login endpoint
-router.post('/google-login', async (req, res) => {
+router.post('/google', async (req, res) => {
     try {
         const { email, name, role } = req.body;
         
